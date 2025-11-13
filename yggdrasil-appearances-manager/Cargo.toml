@@ -1,0 +1,9 @@
+[package]
+name = "yggdrasil-appearances-manager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+yggdrasil-appearancelib = { path = "../yggdrasil-appearancelib" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1.0"
