@@ -94,7 +94,7 @@ pub fn compile_appearances<P: AsRef<Path>>(
             // Dimensões da sprite
             let sprite_data = sprite_cache
                 .iter()
-                .find(|(_, &id)| id == sprite_id)
+                .find(|(_, id)| **id == sprite_id)
                 .map(|(path, _)| {
                     // Recarrega para obter dimensões (poderia ser otimizado cacheando)
                     let img = image::open(path).ok()?;
