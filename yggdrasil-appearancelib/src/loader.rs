@@ -1,7 +1,8 @@
 use crate::error::{AppearanceError, Result};
 use crate::loaded_types::{
-    AppearanceDatabase, FrameOrientation, LoadedAnimation, LoadedAppearance, LoadedSprite, Offset,
+    AppearanceDatabase, FrameOrientation, LoadedAnimation, LoadedAppearance, LoadedSprite,
 };
+use crate::types::Offset;
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use std::collections::HashMap;

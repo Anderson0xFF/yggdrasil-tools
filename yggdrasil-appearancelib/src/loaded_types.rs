@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::types::Offset;
 
 /// Orientação dos frames na spritesheet
 ///
@@ -39,17 +40,6 @@ impl Default for FrameOrientation {
     fn default() -> Self {
         FrameOrientation::Vertical
     }
-}
-
-/// Offset para ajustar a posição de renderização da sprite
-///
-/// Este offset é subtraído da posição de renderização da sprite.
-/// Exemplo: Se a sprite deve ser renderizada em (10, 10) e o offset é (2, 3),
-/// a sprite será renderizada em (10 - 2, 10 - 3) = (8, 7).
-#[derive(Default, Debug, Clone, Copy)]
-pub struct Offset {
-    pub x: i32,
-    pub y: i32,
 }
 
 /// Appearance carregada do arquivo .dat

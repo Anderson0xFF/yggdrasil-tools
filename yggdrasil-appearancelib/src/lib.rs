@@ -7,11 +7,11 @@ pub mod sprite;
 pub mod types;
 
 // Compiler exports
-pub use compiler::{compile_appearances, CompilationResult};
+pub use compiler::{CompilationResult, compile_appearances};
 
 // Loader exports
-pub use loaded_types::{AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedSprite};
-pub use loader::{load_all, load_database_only, AppearanceLoader};
+pub use loaded_types::{AppearanceDatabase, FrameOrientation, LoadedAnimation, LoadedAppearance, LoadedSprite};
+pub use loader::{AppearanceLoader, load_all, load_database_only};
 
 // Common exports
 pub use error::{AppearanceError, Result};
