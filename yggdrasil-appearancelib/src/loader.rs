@@ -1,5 +1,5 @@
 use crate::error::{AppearanceError, Result};
-use crate::loaded_types::{AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedSprite};
+use crate::loaded_types::{AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedSprite, Offset, FrameOrientation};
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use std::collections::HashMap;
@@ -52,6 +52,14 @@ impl AppearanceLoader {
         // Nome
         let name = read_string(cursor)?;
 
+        // Offset
+        let offset_x = cursor.read_i32::<LittleEndian>()?;
+        let offset_y = cursor.read_i32::<LittleEndian>()?;
+        let offset = Offset {
+            x: offset_x,
+            y: offset_y,
+        };
+
         // Size
         let size = cursor.read_u32::<LittleEndian>()?;
 
@@ -68,6 +76,14 @@ impl AppearanceLoader {
             let directions = cursor.read_u32::<LittleEndian>()?;
             let duration = cursor.read_u32::<LittleEndian>()?;
 
+            // Lê a orientação (0 = Vertical, 1 = Horizontal)
+            let orientation_byte = cursor.read_u8()?;
+            let orientation = match orientation_byte {
+                0 => FrameOrientation::Vertical,
+                1 => FrameOrientation::Horizontal,
+                _ => FrameOrientation::Vertical, // Default para valores inválidos
+            };
+
             let animation = LoadedAnimation {
                 name: anim_name.clone(),
                 sprite_id,
@@ -76,6 +92,7 @@ impl AppearanceLoader {
                 frames,
                 directions,
                 duration,
+                orientation,
             };
 
             animations.insert(anim_name, animation);
@@ -84,6 +101,7 @@ impl AppearanceLoader {
         Ok(LoadedAppearance {
             id,
             name,
+            offset,
             size,
             animations,
         })

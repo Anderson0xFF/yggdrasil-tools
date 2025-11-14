@@ -1,5 +1,5 @@
 use crate::error::{AppearanceError, Result};
-use crate::types::{Animation, SpriteData};
+use crate::types::{Animation, Orientation, SpriteData};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use image::GenericImageView;
@@ -102,17 +102,28 @@ pub fn load_sprite_with_size<P: AsRef<Path>>(
     let image = image::open(path_ref)?;
     let (actual_width, actual_height) = image.dimensions();
 
-    // Calcula dimensões esperadas
-    let expected_width = if animation.directions > 0 {
-        size * animation.frames
-    } else {
-        size * animation.frames
-    };
-
-    let expected_height = if animation.directions > 0 {
-        size * animation.directions
-    } else {
-        size
+    // Calcula dimensões esperadas baseado na orientação
+    let (expected_width, expected_height) = match animation.orientation {
+        Orientation::Vertical => {
+            // Vertical: frames em colunas (horizontal), direções em linhas (vertical)
+            let width = size * animation.frames;
+            let height = if animation.directions > 0 {
+                size * animation.directions
+            } else {
+                size
+            };
+            (width, height)
+        }
+        Orientation::Horizontal => {
+            // Horizontal: direções em colunas (horizontal), frames em linhas (vertical)
+            let width = if animation.directions > 0 {
+                size * animation.directions
+            } else {
+                size
+            };
+            let height = size * animation.frames;
+            (width, height)
+        }
     };
 
     // Valida dimensões

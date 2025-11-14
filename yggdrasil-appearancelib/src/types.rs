@@ -1,6 +1,27 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Orientação dos frames na spritesheet
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Orientation {
+    Vertical,
+    Horizontal,
+}
+
+impl Default for Orientation {
+    fn default() -> Self {
+        Orientation::Vertical
+    }
+}
+
+/// Offset para renderização
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct Offset {
+    pub x: i32,
+    pub y: i32,
+}
+
 /// Arquivo principal de appearances (appearances.json)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearancesFile {
@@ -13,6 +34,8 @@ pub struct AppearancesFile {
 pub struct Appearance {
     pub id:         u32,
     pub name:       String,
+    #[serde(default)]
+    pub offset:     Offset,
     pub size:       u32,
     pub animations: HashMap<String, Animation>,
 }
@@ -20,13 +43,15 @@ pub struct Appearance {
 /// Uma animação dentro de uma appearance
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Animation {
-    pub path:       String,
+    pub path:        String,
     #[serde(default = "default_frames")]
-    pub frames:     u32,
+    pub frames:      u32,
     #[serde(default = "default_directions")]
-    pub directions: u32,
+    pub directions:  u32,
     #[serde(default)]
-    pub duration:   Option<u32>,
+    pub duration:    Option<u32>,
+    #[serde(default)]
+    pub orientation: Orientation,
 }
 
 fn default_frames() -> u32 {
