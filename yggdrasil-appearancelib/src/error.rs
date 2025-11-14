@@ -11,7 +11,9 @@ pub enum AppearanceError {
     #[error("Image error: {0}")]
     Image(#[from] image::ImageError),
 
-    #[error("Invalid sprite dimensions for appearance '{name}' animation '{animation}': expected {expected_width}x{expected_height}, got {actual_width}x{actual_height}")]
+    #[error(
+        "Invalid sprite dimensions for appearance '{name}' animation '{animation}': expected {expected_width}x{expected_height}, got {actual_width}x{actual_height}"
+    )]
     InvalidDimensions {
         name:            String,
         animation:       String,

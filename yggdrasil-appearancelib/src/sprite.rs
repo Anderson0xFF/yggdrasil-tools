@@ -1,7 +1,7 @@
 use crate::error::{AppearanceError, Result};
 use crate::types::{Animation, Orientation, SpriteData};
-use flate2::write::GzEncoder;
 use flate2::Compression;
+use flate2::write::GzEncoder;
 use image::GenericImageView;
 use std::io::Write;
 use std::path::Path;
