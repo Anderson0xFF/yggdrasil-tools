@@ -10,3 +10,4 @@ image = "0.25"
 flate2 = "1.0"
 byteorder = "1.5"
 thiserror = "2.0.17"
+yggdrasil-common = { path = "../../yggdrasil-common" }

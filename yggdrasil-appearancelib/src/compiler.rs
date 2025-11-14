@@ -48,6 +48,10 @@ pub fn compile_appearances<P: AsRef<Path>>(
         // Nome
         write_string(&mut dat_buffer, &appearance.name)?;
 
+        // Offset
+        dat_buffer.write_i32::<LittleEndian>(appearance.offset.x)?;
+        dat_buffer.write_i32::<LittleEndian>(appearance.offset.y)?;
+
         // Size
         dat_buffer.write_u32::<LittleEndian>(appearance.size)?;
 
@@ -124,6 +128,13 @@ pub fn compile_appearances<P: AsRef<Path>>(
             dat_buffer.write_u32::<LittleEndian>(animation.frames)?;
             dat_buffer.write_u32::<LittleEndian>(animation.directions)?;
             dat_buffer.write_u32::<LittleEndian>(animation.duration.unwrap_or(0))?;
+
+            // Orientation (0 = Vertical, 1 = Horizontal)
+            let orientation_byte = match animation.orientation {
+                crate::types::Orientation::Vertical => 0u8,
+                crate::types::Orientation::Horizontal => 1u8,
+            };
+            dat_buffer.write_u8(orientation_byte)?;
         }
     }
 
