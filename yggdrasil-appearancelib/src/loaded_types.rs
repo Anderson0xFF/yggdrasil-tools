@@ -1,5 +1,5 @@
+use crate::types::{Direction, Offset};
 use std::collections::HashMap;
-use crate::types::{Offset, Direction};
 
 /// Appearance carregada do arquivo .dat
 #[derive(Default, Debug, Clone)]

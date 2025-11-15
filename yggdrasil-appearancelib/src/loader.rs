@@ -1,7 +1,5 @@
 use crate::error::{AppearanceError, Result};
-use crate::loaded_types::{
-    AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedFrameGroup, LoadedSprite,
-};
+use crate::loaded_types::{AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedFrameGroup, LoadedSprite};
 use crate::types::{Direction, Offset};
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::GzDecoder;

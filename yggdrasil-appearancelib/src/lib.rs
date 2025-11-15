@@ -16,4 +16,6 @@ pub use loader::{AppearanceLoader, load_all, load_database_only};
 // Common exports
 pub use error::{AppearanceError, Result};
 pub use parser::parse_appearances_json;
-pub use types::{Animation, Appearance, AppearancesFile, Direction, FrameGroup, Orientation, SpriteData, SpriteMetadata};
+pub use types::{
+    Animation, Appearance, AppearancesFile, Direction, FrameGroup, Orientation, SpriteData, SpriteMetadata,
+};

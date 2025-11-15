@@ -18,13 +18,10 @@ const COMPRESSION_LEVEL: u32 = 6;
 /// - `orientation`: Orientação do spritesheet (Vertical ou Horizontal)
 ///
 /// # Retorna
-/// Um vetor de `SpriteData`, onde cada elemento é uma sprite individual recortada
+/// Um vetor de `SpriteData`, onde cada elemento é uma sprite individual
+/// recortada
 pub fn slice_spritesheet<P: AsRef<Path>>(
-    spritesheet_path: P,
-    sprite_size: u32,
-    num_frames: u32,
-    num_directions: u32,
-    orientation: Orientation,
+    spritesheet_path: P, sprite_size: u32, num_frames: u32, num_directions: u32, orientation: Orientation,
 ) -> Result<Vec<SpriteData>> {
     let path_ref = spritesheet_path.as_ref();
 

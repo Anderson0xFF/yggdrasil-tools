@@ -23,9 +23,7 @@ impl Default for Orientation {
 }
 
 /// Wrapper para deserializar Option<Direction> com suporte a "null" como string
-fn deserialize_direction_map<'de, D>(
-    deserializer: D,
-) -> Result<HashMap<Option<Direction>, Animation>, D::Error>
+fn deserialize_direction_map<'de, D>(deserializer: D) -> Result<HashMap<Option<Direction>, Animation>, D::Error>
 where
     D: Deserializer<'de>,
 {
