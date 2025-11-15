@@ -22,13 +22,18 @@ mod tests {
                     "id": 1,
                     "name": "warrior",
                     "size": 64,
-                    "animations": {
-                        "idle": {
-                            "path": "assets/sprites/creatures/warrior/idle.png",
-                            "frames": 1,
-                            "directions": 4
+                    "framegroups": [
+                        {
+                            "name": "idle",
+                            "spritesheet": "assets/sprites/creatures/warrior/idle.png",
+                            "animations": {
+                                "north": {
+                                    "frame_count": 1,
+                                    "duration": 1000
+                                }
+                            }
                         }
-                    }
+                    ]
                 }
             ]
         }"#;

@@ -5,210 +5,275 @@
       "id": 1,
       "name": "warrior_male",
       "size": 64,
-      "animations": {
-        "idle": {
-          "path": "assets/sprites/creatures/warrior/idle.png",
-          "frames": 1,
-          "directions": 4,
-          "duration": 1000
+      "framegroups": [
+        {
+          "name": "idle",
+          "spritesheet": "assets/sprites/creatures/warrior/idle.png",
+          "animations": {
+            "north": { "frame_count": 1, "duration": 1000 },
+            "east": { "frame_count": 1, "duration": 1000 },
+            "south": { "frame_count": 1, "duration": 1000 },
+            "west": { "frame_count": 1, "duration": 1000 }
+          }
         },
-        "walk": {
-          "path": "assets/sprites/creatures/warrior/walk.png",
-          "frames": 3,
-          "directions": 4,
-          "duration": 150
+        {
+          "name": "walk",
+          "spritesheet": "assets/sprites/creatures/warrior/walk.png",
+          "animations": {
+            "north": { "frame_count": 3, "duration": 150 },
+            "east": { "frame_count": 3, "duration": 150 },
+            "south": { "frame_count": 3, "duration": 150 },
+            "west": { "frame_count": 3, "duration": 150 }
+          }
         },
-        "attack": {
-          "path": "assets/sprites/creatures/warrior/attack.png",
-          "frames": 4,
-          "directions": 4,
-          "duration": 100
+        {
+          "name": "attack",
+          "spritesheet": "assets/sprites/creatures/warrior/attack.png",
+          "animations": {
+            "north": { "frame_count": 4, "duration": 100 },
+            "east": { "frame_count": 4, "duration": 100 },
+            "south": { "frame_count": 4, "duration": 100 },
+            "west": { "frame_count": 4, "duration": 100 }
+          }
         },
-        "death": {
-          "path": "assets/sprites/creatures/warrior/death.png",
-          "frames": 6,
-          "directions": 4,
-          "duration": 120
+        {
+          "name": "death",
+          "spritesheet": "assets/sprites/creatures/warrior/death.png",
+          "animations": {
+            "north": { "frame_count": 6, "duration": 120 },
+            "east": { "frame_count": 6, "duration": 120 },
+            "south": { "frame_count": 6, "duration": 120 },
+            "west": { "frame_count": 6, "duration": 120 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 2,
       "name": "mage_female",
       "size": 64,
-      "animations": {
-        "idle": {
-          "path": "assets/sprites/creatures/mage/idle.png",
-          "frames": 1,
-          "directions": 4,
-          "duration": 1000
+      "framegroups": [
+        {
+          "name": "idle",
+          "spritesheet": "assets/sprites/creatures/mage/idle.png",
+          "animations": {
+            "north": { "frame_count": 1, "duration": 1000 },
+            "east": { "frame_count": 1, "duration": 1000 },
+            "south": { "frame_count": 1, "duration": 1000 },
+            "west": { "frame_count": 1, "duration": 1000 }
+          }
         },
-        "walk": {
-          "path": "assets/sprites/creatures/mage/walk.png",
-          "frames": 3,
-          "directions": 4,
-          "duration": 150
+        {
+          "name": "walk",
+          "spritesheet": "assets/sprites/creatures/mage/walk.png",
+          "animations": {
+            "north": { "frame_count": 3, "duration": 150 },
+            "east": { "frame_count": 3, "duration": 150 },
+            "south": { "frame_count": 3, "duration": 150 },
+            "west": { "frame_count": 3, "duration": 150 }
+          }
         },
-        "cast": {
-          "path": "assets/sprites/creatures/mage/cast.png",
-          "frames": 5,
-          "directions": 4,
-          "duration": 120
+        {
+          "name": "cast",
+          "spritesheet": "assets/sprites/creatures/mage/cast.png",
+          "animations": {
+            "north": { "frame_count": 5, "duration": 120 },
+            "east": { "frame_count": 5, "duration": 120 },
+            "south": { "frame_count": 5, "duration": 120 },
+            "west": { "frame_count": 5, "duration": 120 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 100,
       "name": "gold_coin",
       "size": 32,
-      "animations": {
-        "default": {
-          "path": "assets/sprites/items/gold_coin.png",
-          "frames": 1,
-          "directions": 0
+      "framegroups": [
+        {
+          "name": "default",
+          "spritesheet": "assets/sprites/items/gold_coin.png",
+          "animations": {
+            "null": { "frame_count": 1 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 101,
       "name": "gold_coin_spinning",
       "size": 32,
-      "animations": {
-        "spin": {
-          "path": "assets/sprites/items/gold_coin_spin.png",
-          "frames": 8,
-          "directions": 0,
-          "duration": 80
+      "framegroups": [
+        {
+          "name": "spin",
+          "spritesheet": "assets/sprites/items/gold_coin_spin.png",
+          "animations": {
+            "null": { "frame_count": 8, "duration": 80 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 102,
       "name": "health_potion",
       "size": 32,
-      "animations": {
-        "default": {
-          "path": "assets/sprites/items/health_potion.png",
-          "frames": 1,
-          "directions": 0
+      "framegroups": [
+        {
+          "name": "default",
+          "spritesheet": "assets/sprites/items/health_potion.png",
+          "animations": {
+            "null": { "frame_count": 1 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 103,
       "name": "wall_torch",
       "size": 32,
-      "animations": {
-        "burning": {
-          "path": "assets/sprites/items/torch.png",
-          "frames": 4,
-          "directions": 4,
-          "duration": 120
+      "framegroups": [
+        {
+          "name": "burning",
+          "spritesheet": "assets/sprites/items/torch.png",
+          "animations": {
+            "north": { "frame_count": 4, "duration": 120 },
+            "east": { "frame_count": 4, "duration": 120 },
+            "south": { "frame_count": 4, "duration": 120 },
+            "west": { "frame_count": 4, "duration": 120 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 200,
       "name": "explosion",
       "size": 64,
-      "animations": {
-        "explode": {
-          "path": "assets/sprites/effects/explosion.png",
-          "frames": 6,
-          "directions": 0,
-          "duration": 80
+      "framegroups": [
+        {
+          "name": "explode",
+          "spritesheet": "assets/sprites/effects/explosion.png",
+          "animations": {
+            "null": { "frame_count": 6, "duration": 80 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 201,
       "name": "fire_wave",
       "size": 48,
-      "animations": {
-        "wave": {
-          "path": "assets/sprites/effects/fire_wave.png",
-          "frames": 4,
-          "directions": 4,
-          "duration": 100
+      "framegroups": [
+        {
+          "name": "wave",
+          "spritesheet": "assets/sprites/effects/fire_wave.png",
+          "animations": {
+            "north": { "frame_count": 4, "duration": 100 },
+            "east": { "frame_count": 4, "duration": 100 },
+            "south": { "frame_count": 4, "duration": 100 },
+            "west": { "frame_count": 4, "duration": 100 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 202,
       "name": "healing_aura",
       "size": 96,
-      "animations": {
-        "pulse": {
-          "path": "assets/sprites/effects/healing_aura.png",
-          "frames": 8,
-          "directions": 0,
-          "duration": 100
+      "framegroups": [
+        {
+          "name": "pulse",
+          "spritesheet": "assets/sprites/effects/healing_aura.png",
+          "animations": {
+            "null": { "frame_count": 8, "duration": 100 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 203,
       "name": "blood_splatter",
       "size": 32,
-      "animations": {
-        "splat": {
-          "path": "assets/sprites/effects/blood.png",
-          "frames": 4,
-          "directions": 0,
-          "duration": 60
+      "framegroups": [
+        {
+          "name": "splat",
+          "spritesheet": "assets/sprites/effects/blood.png",
+          "animations": {
+            "null": { "frame_count": 4, "duration": 60 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 300,
       "name": "arrow",
       "size": 32,
-      "animations": {
-        "fly": {
-          "path": "assets/sprites/projectiles/arrow.png",
-          "frames": 1,
-          "directions": 4
+      "framegroups": [
+        {
+          "name": "fly",
+          "spritesheet": "assets/sprites/projectiles/arrow.png",
+          "animations": {
+            "north": { "frame_count": 1 },
+            "east": { "frame_count": 1 },
+            "south": { "frame_count": 1 },
+            "west": { "frame_count": 1 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 301,
       "name": "fireball",
       "size": 32,
-      "animations": {
-        "fly": {
-          "path": "assets/sprites/projectiles/fireball.png",
-          "frames": 3,
-          "directions": 4,
-          "duration": 100
+      "framegroups": [
+        {
+          "name": "fly",
+          "spritesheet": "assets/sprites/projectiles/fireball.png",
+          "animations": {
+            "north": { "frame_count": 3, "duration": 100 },
+            "east": { "frame_count": 3, "duration": 100 },
+            "south": { "frame_count": 3, "duration": 100 },
+            "west": { "frame_count": 3, "duration": 100 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 302,
       "name": "magic_missile",
       "size": 24,
-      "animations": {
-        "fly": {
-          "path": "assets/sprites/projectiles/magic_missile.png",
-          "frames": 4,
-          "directions": 8,
-          "duration": 80
+      "framegroups": [
+        {
+          "name": "fly",
+          "spritesheet": "assets/sprites/projectiles/magic_missile.png",
+          "animations": {
+            "north": { "frame_count": 4, "duration": 80 },
+            "northeast": { "frame_count": 4, "duration": 80 },
+            "east": { "frame_count": 4, "duration": 80 },
+            "southeast": { "frame_count": 4, "duration": 80 },
+            "south": { "frame_count": 4, "duration": 80 },
+            "southwest": { "frame_count": 4, "duration": 80 },
+            "west": { "frame_count": 4, "duration": 80 },
+            "northwest": { "frame_count": 4, "duration": 80 }
+          }
         }
-      }
+      ]
     },
     {
       "id": 303,
       "name": "ice_shard",
       "size": 32,
-      "animations": {
-        "fly": {
-          "path": "assets/sprites/projectiles/ice_shard.png",
-          "frames": 2,
-          "directions": 4,
-          "duration": 120
+      "framegroups": [
+        {
+          "name": "fly",
+          "spritesheet": "assets/sprites/projectiles/ice_shard.png",
+          "animations": {
+            "north": { "frame_count": 2, "duration": 120 },
+            "east": { "frame_count": 2, "duration": 120 },
+            "south": { "frame_count": 2, "duration": 120 },
+            "west": { "frame_count": 2, "duration": 120 }
+          }
         }
-      }
+      ]
     }
   ]
 }

@@ -1,8 +1,7 @@
 use crate::error::Result;
-use crate::sprite::load_sprite_with_size;
-use crate::types::{AppearancesFile, SpriteData};
+use crate::sprite::slice_spritesheet;
+use crate::types::{AppearancesFile, Direction, SpriteData};
 use byteorder::{LittleEndian, WriteBytesExt};
-use image::GenericImageView;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Cursor, Write};
@@ -26,8 +25,6 @@ pub fn compile_appearances<P: AsRef<Path>>(
     // Cria a pasta de output se não existir
     fs::create_dir_all(output_path)?;
 
-    // Mapa para evitar duplicar sprites (mesmo path = mesmo arquivo .spr)
-    let mut sprite_cache: HashMap<String, u32> = HashMap::new();
     let mut next_sprite_id = 1u32;
 
     // Buffer para o arquivo .dat
@@ -55,86 +52,117 @@ pub fn compile_appearances<P: AsRef<Path>>(
         // Size
         dat_buffer.write_u32::<LittleEndian>(appearance.size)?;
 
-        // Número de animações
-        dat_buffer.write_u32::<LittleEndian>(appearance.animations.len() as u32)?;
+        // Número de framegroups
+        dat_buffer.write_u32::<LittleEndian>(appearance.framegroups.len() as u32)?;
 
-        // Processa cada animação
-        for (anim_name, animation) in &appearance.animations {
-            // Nome da animação
-            write_string(&mut dat_buffer, anim_name)?;
+        // Processa cada framegroup
+        for framegroup in &appearance.framegroups {
+            // Nome do framegroup
+            write_string(&mut dat_buffer, &framegroup.name)?;
 
-            // Resolve o path completo da sprite
-            let sprite_path = if animation.path.starts_with("assets/") {
-                base_path.join(&animation.path)
+            // Resolve o path completo do spritesheet
+            let spritesheet_path = if framegroup.spritesheet.starts_with("assets/") {
+                base_path.join(&framegroup.spritesheet)
             } else {
-                PathBuf::from(&animation.path)
+                PathBuf::from(&framegroup.spritesheet)
             };
 
-            let sprite_path_str = sprite_path.display().to_string();
+            // Número de animações (direções)
+            dat_buffer.write_u32::<LittleEndian>(framegroup.animations.len() as u32)?;
 
-            // Verifica se já processamos essa sprite
-            let sprite_id = if let Some(&cached_id) = sprite_cache.get(&sprite_path_str) {
-                cached_id
-            } else {
-                // Carrega e processa a sprite
-                let sprite_data =
-                    load_sprite_with_size(&sprite_path, &appearance.name, anim_name, animation, appearance.size)?;
-
-                // Salva o arquivo .spr
-                let sprite_id = next_sprite_id;
-                save_sprite_file(output_path, sprite_id, &sprite_data)?;
-
-                total_spr_size += sprite_data.compressed_pixels.len();
-                sprite_cache.insert(sprite_path_str, sprite_id);
-                next_sprite_id += 1;
-                total_sprites += 1;
-
-                sprite_id
-            };
-
-            // Escreve metadados da animação
-            dat_buffer.write_u32::<LittleEndian>(sprite_id)?;
-
-            // Dimensões da sprite
-            let sprite_data = sprite_cache
-                .iter()
-                .find(|(_, id)| **id == sprite_id)
-                .map(|(path, _)| {
-                    // Recarrega para obter dimensões (poderia ser otimizado cacheando)
-                    let img = image::open(path).ok()?;
-                    Some(img.dimensions())
-                })
-                .flatten();
-
-            if let Some((width, height)) = sprite_data {
-                dat_buffer.write_u32::<LittleEndian>(width)?;
-                dat_buffer.write_u32::<LittleEndian>(height)?;
-            } else {
-                // Calcula dimensões esperadas
-                let width = if animation.directions > 0 {
-                    appearance.size * animation.frames
+            // Processa cada animação/direção
+            for (direction, animation) in &framegroup.animations {
+                // Escreve a direção (ou None se não houver)
+                if let Some(dir) = direction {
+                    dat_buffer.write_u8(1)?; // Tem direção
+                    dat_buffer.write_u8(direction_to_u8(*dir))?;
                 } else {
-                    appearance.size * animation.frames
-                };
-                let height = if animation.directions > 0 {
-                    appearance.size * animation.directions
+                    dat_buffer.write_u8(0)?; // Sem direção
+                }
+
+                // Determina o número de direções para recorte
+                let num_directions = if direction.is_some() {
+                    // Se há uma direção específica, assumimos que o spritesheet
+                    // contém todas as direções em linhas
+                    framegroup.animations.len() as u32
                 } else {
-                    appearance.size
+                    0
                 };
-                dat_buffer.write_u32::<LittleEndian>(width)?;
-                dat_buffer.write_u32::<LittleEndian>(height)?;
+
+                // Recorta o spritesheet em sprites individuais
+                let sprites = slice_spritesheet(
+                    &spritesheet_path,
+                    appearance.size,
+                    animation.frame_count,
+                    num_directions,
+                    framegroup.orientation,
+                )?;
+
+                // Determina quais sprites pertencem a esta animação específica
+                let sprite_ids: Vec<u32> = if let Some(dir) = direction {
+                    // Calcula os índices baseado na direção e orientação
+                    let direction_index = calculate_direction_row(*dir, &framegroup.animations);
+
+                    // Para orientação Horizontal: sprites são organizadas por frame
+                    // Frame 0: [N][E][S][W], Frame 1: [N][E][S][W], etc.
+                    // Para orientação Vertical: sprites são organizadas por direção
+                    // North: [N1][N2][N3]..., East: [E1][E2][E3]..., etc.
+                    let sprite_indices: Vec<usize> = match framegroup.orientation {
+                        crate::types::Orientation::Horizontal => {
+                            // Para cada frame, pega a sprite na coluna da direção
+                            (0..animation.frame_count)
+                                .map(|frame| (frame as usize * num_directions as usize) + direction_index)
+                                .collect()
+                        }
+                        crate::types::Orientation::Vertical => {
+                            // Pega todas as sprites da linha da direção
+                            let start_idx = direction_index * animation.frame_count as usize;
+                            (start_idx..start_idx + animation.frame_count as usize).collect()
+                        }
+                    };
+
+                    // Salva as sprites
+                    sprite_indices
+                        .iter()
+                        .map(|&idx| {
+                            let sprite_data = &sprites[idx];
+                            let sprite_id = next_sprite_id;
+                            save_sprite_file(output_path, sprite_id, sprite_data).ok();
+                            total_spr_size += sprite_data.compressed_pixels.len();
+                            total_sprites += 1;
+                            next_sprite_id += 1;
+                            sprite_id
+                        })
+                        .collect()
+                } else {
+                    // Sem direção, todas as sprites são dessa animação
+                    sprites
+                        .iter()
+                        .map(|sprite_data| {
+                            let sprite_id = next_sprite_id;
+                            save_sprite_file(output_path, sprite_id, sprite_data).ok();
+                            total_spr_size += sprite_data.compressed_pixels.len();
+                            total_sprites += 1;
+                            next_sprite_id += 1;
+                            sprite_id
+                        })
+                        .collect()
+                };
+
+                // Escreve o número de sprite IDs
+                dat_buffer.write_u32::<LittleEndian>(sprite_ids.len() as u32)?;
+
+                // Escreve cada sprite ID
+                for sprite_id in sprite_ids {
+                    dat_buffer.write_u32::<LittleEndian>(sprite_id)?;
+                }
+
+                // Escreve a duração
+                dat_buffer.write_u32::<LittleEndian>(animation.duration.unwrap_or(0))?;
+
+                // Escreve o flag looped (1 = true, 0 = false)
+                dat_buffer.write_u8(if animation.looped.unwrap_or(true) { 1 } else { 0 })?;
             }
-
-            dat_buffer.write_u32::<LittleEndian>(animation.frames)?;
-            dat_buffer.write_u32::<LittleEndian>(animation.directions)?;
-            dat_buffer.write_u32::<LittleEndian>(animation.duration.unwrap_or(0))?;
-
-            // Orientation (0 = Vertical, 1 = Horizontal)
-            let orientation_byte = match animation.orientation {
-                crate::types::Orientation::Vertical => 0u8,
-                crate::types::Orientation::Horizontal => 1u8,
-            };
-            dat_buffer.write_u8(orientation_byte)?;
         }
     }
 
@@ -149,6 +177,30 @@ pub fn compile_appearances<P: AsRef<Path>>(
         dat_size: dat_bytes.len(),
         total_spr_size,
     })
+}
+
+/// Converte Direction para u8
+fn direction_to_u8(dir: Direction) -> u8 {
+    match dir {
+        Direction::North => 0,
+        Direction::East => 1,
+        Direction::South => 2,
+        Direction::West => 3,
+        Direction::NorthEast => 4,
+        Direction::SouthEast => 5,
+        Direction::SouthWest => 6,
+        Direction::NorthWest => 7,
+    }
+}
+
+/// Calcula o índice da linha para uma direção específica
+fn calculate_direction_row(dir: Direction, animations: &HashMap<Option<Direction>, crate::types::Animation>) -> usize {
+    // Ordena as direções para garantir consistência
+    let mut directions: Vec<Direction> = animations.keys().filter_map(|k| *k).collect();
+
+    directions.sort_by_key(|d| direction_to_u8(*d));
+
+    directions.iter().position(|d| *d == dir).unwrap_or(0)
 }
 
 /// Salva um arquivo .spr

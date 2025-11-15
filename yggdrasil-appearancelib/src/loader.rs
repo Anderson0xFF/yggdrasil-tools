@@ -1,8 +1,8 @@
 use crate::error::{AppearanceError, Result};
 use crate::loaded_types::{
-    AppearanceDatabase, FrameOrientation, LoadedAnimation, LoadedAppearance, LoadedSprite,
+    AppearanceDatabase, LoadedAnimation, LoadedAppearance, LoadedFrameGroup, LoadedSprite,
 };
-use crate::types::Offset;
+use crate::types::{Direction, Offset};
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use std::collections::HashMap;
@@ -66,39 +66,13 @@ impl AppearanceLoader {
         // Size
         let size = cursor.read_u32::<LittleEndian>()?;
 
-        // Animações
-        let animation_count = cursor.read_u32::<LittleEndian>()?;
-        let mut animations = HashMap::new();
+        // FrameGroups
+        let framegroup_count = cursor.read_u32::<LittleEndian>()?;
+        let mut framegroups = Vec::new();
 
-        for _ in 0..animation_count {
-            let anim_name = read_string(cursor)?;
-            let sprite_id = cursor.read_u32::<LittleEndian>()?;
-            let width = cursor.read_u32::<LittleEndian>()?;
-            let height = cursor.read_u32::<LittleEndian>()?;
-            let frames = cursor.read_u32::<LittleEndian>()?;
-            let directions = cursor.read_u32::<LittleEndian>()?;
-            let duration = cursor.read_u32::<LittleEndian>()?;
-
-            // Lê a orientação (0 = Vertical, 1 = Horizontal)
-            let orientation_byte = cursor.read_u8()?;
-            let orientation = match orientation_byte {
-                0 => FrameOrientation::Vertical,
-                1 => FrameOrientation::Horizontal,
-                _ => FrameOrientation::Vertical, // Default para valores inválidos
-            };
-
-            let animation = LoadedAnimation {
-                name: anim_name.clone(),
-                sprite_id,
-                width,
-                height,
-                frames,
-                directions,
-                duration,
-                orientation,
-            };
-
-            animations.insert(anim_name, animation);
+        for _ in 0..framegroup_count {
+            let framegroup = self.read_framegroup(cursor)?;
+            framegroups.push(framegroup);
         }
 
         Ok(LoadedAppearance {
@@ -106,6 +80,55 @@ impl AppearanceLoader {
             name,
             offset,
             size,
+            framegroups,
+        })
+    }
+
+    /// Lê um framegroup do cursor
+    fn read_framegroup<R: Read>(&self, cursor: &mut R) -> Result<LoadedFrameGroup> {
+        // Nome do framegroup
+        let name = read_string(cursor)?;
+
+        // Número de animações (direções)
+        let animation_count = cursor.read_u32::<LittleEndian>()?;
+        let mut animations = HashMap::new();
+
+        for _ in 0..animation_count {
+            // Lê se tem direção
+            let has_direction = cursor.read_u8()?;
+            let direction = if has_direction == 1 {
+                let dir_byte = cursor.read_u8()?;
+                Some(u8_to_direction(dir_byte))
+            } else {
+                None
+            };
+
+            // Lê o número de sprite IDs
+            let sprite_id_count = cursor.read_u32::<LittleEndian>()?;
+            let mut sprite_ids = Vec::with_capacity(sprite_id_count as usize);
+
+            for _ in 0..sprite_id_count {
+                let sprite_id = cursor.read_u32::<LittleEndian>()?;
+                sprite_ids.push(sprite_id);
+            }
+
+            // Lê a duração
+            let duration = cursor.read_u32::<LittleEndian>()?;
+
+            // Lê o flag looped (1 = true, 0 = false)
+            let looped = cursor.read_u8()? == 1;
+
+            let animation = LoadedAnimation {
+                sprite_ids,
+                duration,
+                looped,
+            };
+
+            animations.insert(direction, animation);
+        }
+
+        Ok(LoadedFrameGroup {
+            name,
             animations,
         })
     }
@@ -173,7 +196,13 @@ impl AppearanceLoader {
 
     /// Pré-carrega todos os sprites de uma appearance
     pub fn preload_appearance_sprites(&mut self, appearance: &LoadedAppearance) -> Result<()> {
-        let sprite_ids: Vec<u32> = appearance.animations.values().map(|anim| anim.sprite_id).collect();
+        let sprite_ids: Vec<u32> = appearance
+            .framegroups
+            .iter()
+            .flat_map(|fg| fg.animations.values())
+            .flat_map(|anim| &anim.sprite_ids)
+            .copied()
+            .collect();
 
         self.preload_sprites(&sprite_ids)
     }
@@ -199,6 +228,21 @@ impl AppearanceLoader {
     }
 }
 
+/// Converte u8 para Direction
+fn u8_to_direction(byte: u8) -> Direction {
+    match byte {
+        0 => Direction::North,
+        1 => Direction::East,
+        2 => Direction::South,
+        3 => Direction::West,
+        4 => Direction::NorthEast,
+        5 => Direction::SouthEast,
+        6 => Direction::SouthWest,
+        7 => Direction::NorthWest,
+        _ => Direction::North, // Default
+    }
+}
+
 /// Lê uma string do formato: length (u32) + bytes (UTF-8)
 fn read_string<R: Read>(reader: &mut R) -> Result<String> {
     let length = reader.read_u32::<LittleEndian>()?;
@@ -217,7 +261,13 @@ pub fn load_all<P: AsRef<Path>>(base_path: P) -> Result<(AppearanceDatabase, App
     // Pré-carrega todos os sprites
     let all_sprite_ids: Vec<u32> = database
         .all_appearances()
-        .flat_map(|app| app.animations.values().map(|anim| anim.sprite_id))
+        .flat_map(|app| {
+            app.framegroups
+                .iter()
+                .flat_map(|fg| fg.animations.values())
+                .flat_map(|anim| &anim.sprite_ids)
+                .copied()
+        })
         .collect();
 
     loader.preload_sprites(&all_sprite_ids)?;

@@ -1,205 +1,385 @@
 # Yggdrasil Appearances Manager
 
-Sistema de compilação de sprites para o projeto Yggdrasil.
+Sistema de compilação de sprites para o projeto Yggdrasil com recorte automático de spritesheets.
 
 ## 📋 Visão Geral
 
-O **Appearances Manager** é uma ferramenta que compila o arquivo `appearances.json` (formato v2) em arquivos binários otimizados para carregamento rápido em runtime:
+O **Appearances Manager** compila o arquivo `appearances.json` em arquivos binários otimizados:
 
-- **`appearances.dat`**: Arquivo binário com metadados de todas as appearances
-- **`XXXXX.spr`**: Arquivos individuais contendo pixels compactados (Gzip) de cada sprite
+- **`appearances.dat`**: Metadados binários de todas as appearances
+- **`XXXXX.spr`**: Sprites individuais compactadas (Gzip) - uma por arquivo
 
-## 🎯 Estrutura do `appearances.json` v2
+### 🆕 Recorte Automático de Spritesheets
+
+O compilador **recorta automaticamente** cada spritesheet em sprites individuais:
+- Lê o PNG completo
+- Divide em pedaços de `size × size` pixels
+- Compacta cada sprite individualmente
+- Salva como arquivos `.spr` numerados sequencialmente
+
+**Vantagens:**
+- ✅ Sprites pequenas e independentes
+- ✅ Carregamento sob demanda (lazy loading)
+- ✅ Menor uso de memória
+- ✅ Cache eficiente por sprite
+- ✅ Reutilização entre appearances
+
+## 🎯 Estrutura do `appearances.json`
+
+### Formato Completo
 
 ```json
 {
   "version": 2,
   "appearances": [
     {
-      "id": 1,
-      "name": "warrior",
+      "id": 55,
+      "name": "leiden",
       "size": 64,
-      "animations": {
-        "idle": {
-          "path": "assets/sprites/creatures/warrior/idle.png",
-          "frames": 1,
-          "directions": 4,
-          "duration": 1000
+      "offset": { "x": 0, "y": -8 },
+      "framegroups": [
+        {
+          "name": "idle",
+          "spritesheet": "assets/characters/leiden/idle.png",
+          "orientation": "horizontal",
+          "animations": {
+            "north": { "frame_count": 1, "duration": 1000 },
+            "east": { "frame_count": 1, "duration": 1000 },
+            "south": { "frame_count": 1, "duration": 1000 },
+            "west": { "frame_count": 1, "duration": 1000 }
+          }
         },
-        "walk": {
-          "path": "assets/sprites/creatures/warrior/walk.png",
-          "frames": 3,
-          "directions": 4,
-          "duration": 150
+        {
+          "name": "walk",
+          "spritesheet": "assets/characters/leiden/walk.png",
+          "animations": {
+            "north": { "frame_count": 8, "duration": 100 },
+            "east": { "frame_count": 8, "duration": 100 },
+            "south": { "frame_count": 8, "duration": 100 },
+            "west": { "frame_count": 8, "duration": 100 }
+          }
         }
-      }
+      ]
     }
   ]
 }
 ```
 
-### Campos
-
-#### Appearance
-- **`id`**: ID único (u32) - usado para referenciar em `items.json`
-- **`name`**: Nome descritivo (string)
-- **`size`**: Tamanho base do sprite em pixels (u32)
-- **`animations`**: Mapa de nome → configuração de animação
-
-#### Animation
-- **`path`**: Caminho relativo do arquivo de sprite
-- **`frames`**: Número de frames da animação (padrão: 1)
-- **`directions`**: 0 = sem direção, 4 = N/S/E/W, 8 = 8 direções (padrão: 0)
-- **`duration`**: Duração de cada frame em milissegundos (opcional)
-
-### Layout de Sprites
-
-#### 🎨 Ordem das Direções: **North → South → East → West**
-
-As sprites com direções devem ser organizadas **VERTICALMENTE** (uma direção por linha):
+### 📐 Hierarquia
 
 ```
+Appearance
+  ├── id: ID único
+  ├── name: Nome descritivo
+  ├── size: Tamanho base (32, 64, etc.)
+  ├── offset: Deslocamento de renderização (opcional)
+  └── framegroups: Lista de grupos de animação
+        ├── name: "idle", "walk", "attack", etc.
+        ├── spritesheet: Caminho do PNG original
+        ├── orientation: "vertical" ou "horizontal" (padrão: vertical)
+        └── animations: Mapa de direção → animação
+              ├── direction: "north", "east", "south", "west", "null"
+              └── Animation
+                    ├── frame_count: Número de frames
+                    └── duration: Milissegundos por frame (opcional)
+```
+
+## 🧩 Componentes
+
+### Appearance
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | u32 | ID único da appearance |
+| `name` | string | Nome descritivo |
+| `size` | u32 | Tamanho base em pixels (32, 64, etc.) |
+| `offset` | Offset | Deslocamento de renderização (opcional) |
+| `framegroups` | FrameGroup[] | Lista de grupos de animação |
+
+### FrameGroup
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `name` | string | Nome do grupo ("idle", "walk", etc.) |
+| `spritesheet` | string | Caminho do PNG que será recortado |
+| `orientation` | Orientation | Layout do spritesheet (padrão: "vertical") |
+| `animations` | Map | Mapa de direção para animação |
+
+### Animation
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `frame_count` | u32 | Número de frames da animação |
+| `duration` | u32? | Milissegundos por frame (opcional) |
+
+### Direções Suportadas
+
+Use como chaves no objeto `animations`:
+
+**Sem direção:**
+- `"null"` - Para itens, efeitos omnidirecionais
+
+**4 Direções cardinais:**
+- `"north"` - Norte (↑)
+- `"east"` - Leste (→)
+- `"south"` - Sul (↓)
+- `"west"` - Oeste (←)
+
+**8 Direções completas:**
+- `"northeast"` - Nordeste (↗)
+- `"southeast"` - Sudeste (↘)
+- `"southwest"` - Sudoeste (↙)
+- `"northwest"` - Noroeste (↖)
+
+## 📏 Orientação de Spritesheets
+
+### Vertical (Padrão)
+
+Frames em **colunas**, direções em **linhas**:
+
+```
+┌─────────────────────────────────┐
+│ [N1][N2][N3][N4][N5][N6][N7][N8] │ ← Norte
+├─────────────────────────────────┤
+│ [E1][E2][E3][E4][E5][E6][E7][E8] │ ← Leste
+├─────────────────────────────────┤
+│ [S1][S2][S3][S4][S5][S6][S7][S8] │ ← Sul
+├─────────────────────────────────┤
+│ [W1][W2][W3][W4][W5][W6][W7][W8] │ ← Oeste
+└─────────────────────────────────┘
+```
+
+**Dimensões:** `size × frame_count` × `size × num_directions`
+
+**Exemplo:** 8 frames, 64px, 4 direções = **512×256 pixels**
+
+### Horizontal
+
+Direções em **colunas**, frames em **linhas**:
+
+```
+┌───────────────────┐
+│ [N][E][S][W] │ ← Frame 1
+├───────────────────┤
+│ [N][E][S][W] │ ← Frame 2
+├───────────────────┤
+│ [N][E][S][W] │ ← Frame 3
+└───────────────────┘
+```
+
+**Dimensões:** `size × num_directions` × `size × frame_count`
+
+**Exemplo:** 1 frame, 64px, 4 direções = **256×64 pixels**
+
+## 🔄 Processo de Compilação
+
+```
+appearances.json
+      ↓
 ┌─────────────────────────────────────┐
-│  [N][N][N][N]  ← Linha 0: North    │
-│  [S][S][S][S]  ← Linha 1: South    │
-│  [E][E][E][E]  ← Linha 2: East     │
-│  [W][W][W][W]  ← Linha 3: West     │
+│  1. Parse JSON                      │
+│  2. Para cada FrameGroup:           │
+│     ├─ Carrega o spritesheet        │
+│     ├─ Valida dimensões             │
+│     ├─ Recorta em sprites 64×64     │
+│     ├─ Compacta cada sprite (Gzip)  │
+│     └─ Salva como XXXXX.spr         │
+│  3. Gera appearances.dat com IDs    │
 └─────────────────────────────────────┘
+      ↓
+compiled/
+├── appearances.dat  (metadados)
+├── 00001.spr       (sprite 1)
+├── 00002.spr       (sprite 2)
+└── ...
 ```
-
-**Correspondência com o enum `Direction`:**
-- `Direction::North` (0) → Linha 0
-- `Direction::South` (1) → Linha 1
-- `Direction::East` (2) → Linha 2
-- `Direction::West` (3) → Linha 3
-
----
-
-#### Exemplo Prático: `walk.png` (3 frames, 64px, 4 direções)
-
-**Dimensões:** 192×256 pixels (64×3 wide, 64×4 tall)
-
-```
-┌────────┬────────┬────────┐
-│ North1 │ North2 │ North3 │  y=0-63    (Direction::North)
-├────────┼────────┼────────┤
-│ South1 │ South2 │ South3 │  y=64-127  (Direction::South)
-├────────┼────────┼────────┤
-│ East1  │ East2  │ East3  │  y=128-191 (Direction::East)
-├────────┼────────┼────────┤
-│ West1  │ West2  │ West3  │  y=192-255 (Direction::West)
-└────────┴────────┴────────┘
-```
-
-**Fórmula de Cálculo:**
-```
-Largura total  = size × frames       (64 × 3 = 192px)
-Altura total   = size × directions   (64 × 4 = 256px)
-
-Posição X do frame = frame_index × size
-Posição Y da direção = direction_index × size
-```
-
----
-
-#### Sprites SEM direções (`directions: 0`)
-
-**Exemplo:** `explosion.png` (6 frames, 64px, sem direção)
-
-**Dimensões:** 384×64 pixels (64×6 wide, 64 tall)
-
-```
-┌────────┬────────┬────────┬────────┬────────┬────────┐
-│ frame1 │ frame2 │ frame3 │ frame4 │ frame5 │ frame6 │
-└────────┴────────┴────────┴────────┴────────┴────────┘
-```
-
-**Fórmula:**
-```
-Largura = size × frames   (64 × 6 = 384px)
-Altura  = size            (64px)
-```
-
----
-
-#### ❌ Layout INCORRETO (não use!):
-
-```
-NÃO faça assim (direções em colunas):
-[N][S][E][W]  ← frame 1
-[N][S][E][W]  ← frame 2
-[N][S][E][W]  ← frame 3
-```
-
-**Use sempre direções em LINHAS!**
 
 ## 🚀 Uso
 
-### Compilar appearances
+### Compilar
 
 ```bash
 cargo run -p yggdrasil-appearances-manager -- \
-  --input yggdrasil-client/assets/appearances/appearances.json \
-  --output yggdrasil-client/assets/appearances/compiled \
+  --input assets/appearances/appearances.json \
+  --output assets/appearances/compiled \
   --base-path .
 ```
 
-**Nota:** O output padrão agora é `assets/appearances/compiled/` para manter os arquivos compilados separados dos sources.
-
 ### Argumentos
 
-- `--input, -i`: Caminho do `appearances.json` (padrão: `assets/appearances/appearances.json`)
-- `--output, -o`: Pasta de destino (padrão: `assets/appearances/compiled`)
-- `--base-path, -b`: Caminho base para resolver paths relativos (padrão: `.`)
+| Argumento | Curto | Descrição | Padrão |
+|-----------|-------|-----------|--------|
+| `--input` | `-i` | Arquivo JSON de entrada | `assets/appearances/appearances.json` |
+| `--output` | `-o` | Pasta de saída | `assets/appearances/compiled` |
+| `--base-path` | `-b` | Base para paths relativos | `.` |
 
 ### Exemplo de Output
 
 ```
 🎮 Yggdrasil Appearances Manager
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📄 Input:  yggdrasil-client/assets/appearances/appearances.json
-📂 Output: yggdrasil-client/assets/appearances/compiled
+📄 Input:  assets/appearances/appearances.json
+📂 Output: assets/appearances/compiled
 🗂️  Base:   .
 
-📖 Parsing appearances.json... ✓ 4 appearances found
+📖 Parsing appearances.json... ✓ 1 appearances found
 🔨 Compiling sprites... ✓
 
 ✅ Compilation successful!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 Summary:
-   • Appearances: 4
-   • Unique sprites: 6
-   • appearances.dat: 512 bytes (0.50 KB)
-   • Total .spr files: 2.3 MB
+   • Appearances: 1
+   • Total sprites: 36
+   • appearances.dat: 1.5 KB
+   • Total .spr files: 245 KB
 
 📁 Output files:
-   • assets/appearances/appearances.dat
-   • assets/appearances/00001.spr ... 00006.spr
+   • assets/appearances/compiled/appearances.dat
+   • assets/appearances/compiled/00001.spr ... 00036.spr
 ```
 
 ## 📂 Estrutura de Arquivos
 
 ```
 assets/appearances/
-├── appearances.json     # Fonte (JSON v2) - editado manualmente
-├── tiles/              # Sprites de tiles (sources)
-│   ├── 1.png
-│   ├── 2.png
+├── appearances.json       # ✏️ Editável - Configuração source
+├── tiles/                 # 📁 Spritesheets originais
+│   ├── grass.png
+│   ├── stone.png
 │   └── ...
-├── creatures/          # Sprites de criaturas (sources)
-│   ├── warrior/
-│   │   ├── idle.png
-│   │   ├── walk.png
-│   │   └── attack.png
-│   └── ...
-└── compiled/           # Arquivos binários compilados (gerados)
-    ├── appearances.dat  # Metadados binários
-    ├── 00001.spr       # Sprite ID 1 (compactada)
-    ├── 00002.spr       # Sprite ID 2 (compactada)
-    └── ...
+├── characters/
+│   └── leiden/
+│       ├── idle.png       # 256×64 (horizontal)
+│       └── walk.png       # 512×256 (vertical)
+└── compiled/              # ⚙️ GERADO - Não editar!
+    ├── appearances.dat    # Metadados binários
+    ├── 00001.spr         # Leiden idle north
+    ├── 00002.spr         # Leiden idle east
+    ├── 00003.spr         # Leiden idle south
+    ├── 00004.spr         # Leiden idle west
+    ├── 00005.spr         # Leiden walk north frame 1
+    ├── 00006.spr         # Leiden walk north frame 2
+    └── ...               # 36 sprites no total
 ```
 
-**Importante:** A pasta `compiled/` é gerada automaticamente e deve estar no `.gitignore`.
+## 📦 Exemplos Práticos
+
+### Tile Estático (Sem Animação)
+
+```json
+{
+  "id": 1,
+  "name": "grass",
+  "size": 32,
+  "framegroups": [
+    {
+      "name": "default",
+      "spritesheet": "assets/tiles/grass.png",
+      "animations": {
+        "null": { "frame_count": 1 }
+      }
+    }
+  ]
+}
+```
+
+**Spritesheet:** `grass.png` = 32×32 pixels
+**Resultado:** 1 sprite (00001.spr)
+
+---
+
+### Item Animado (Sem Direção)
+
+```json
+{
+  "id": 7,
+  "name": "coin",
+  "size": 32,
+  "framegroups": [
+    {
+      "name": "spin",
+      "spritesheet": "assets/items/coin_spin.png",
+      "animations": {
+        "null": { "frame_count": 8, "duration": 80 }
+      }
+    }
+  ]
+}
+```
+
+**Spritesheet:** `coin_spin.png` = 256×32 pixels (8 frames × 32px)
+**Resultado:** 8 sprites (00007.spr a 00014.spr)
+
+---
+
+### Personagem Completo (Idle Horizontal + Walk Vertical)
+
+```json
+{
+  "id": 55,
+  "name": "leiden",
+  "size": 64,
+  "framegroups": [
+    {
+      "name": "idle",
+      "spritesheet": "assets/characters/leiden/idle.png",
+      "orientation": "horizontal",
+      "animations": {
+        "north": { "frame_count": 1, "duration": 1000 },
+        "east": { "frame_count": 1, "duration": 1000 },
+        "south": { "frame_count": 1, "duration": 1000 },
+        "west": { "frame_count": 1, "duration": 1000 }
+      }
+    },
+    {
+      "name": "walk",
+      "spritesheet": "assets/characters/leiden/walk.png",
+      "animations": {
+        "north": { "frame_count": 8, "duration": 100 },
+        "east": { "frame_count": 8, "duration": 100 },
+        "south": { "frame_count": 8, "duration": 100 },
+        "west": { "frame_count": 8, "duration": 100 }
+      }
+    }
+  ]
+}
+```
+
+**Spritesheets:**
+- `idle.png` = 256×64 pixels (4 dirs × 1 frame, horizontal)
+- `walk.png` = 512×256 pixels (8 frames × 4 dirs, vertical)
+
+**Resultado:** 36 sprites
+- Idle: 4 sprites (1 por direção)
+- Walk: 32 sprites (8 frames × 4 direções)
+
+---
+
+### Projétil com 8 Direções
+
+```json
+{
+  "id": 302,
+  "name": "magic_missile",
+  "size": 24,
+  "framegroups": [
+    {
+      "name": "fly",
+      "spritesheet": "assets/projectiles/magic_missile.png",
+      "animations": {
+        "north": { "frame_count": 4, "duration": 80 },
+        "northeast": { "frame_count": 4, "duration": 80 },
+        "east": { "frame_count": 4, "duration": 80 },
+        "southeast": { "frame_count": 4, "duration": 80 },
+        "south": { "frame_count": 4, "duration": 80 },
+        "southwest": { "frame_count": 4, "duration": 80 },
+        "west": { "frame_count": 4, "duration": 80 },
+        "northwest": { "frame_count": 4, "duration": 80 }
+      }
+    }
+  ]
+}
+```
+
+**Spritesheet:** `magic_missile.png` = 96×192 pixels (4 frames × 8 dirs)
+**Resultado:** 32 sprites (4 frames × 8 direções)
 
 ## 🔧 Formato Binário
 
@@ -207,42 +387,44 @@ assets/appearances/
 
 ```
 [Header]
-- version: u32
-- appearance_count: u32
+version: u32
+appearance_count: u32
 
-[Appearances] (repetido appearance_count vezes)
-- id: u32
-- name_length: u32
-- name: String (UTF-8)
-- size: u32
-- animation_count: u32
+[Para cada Appearance]
+id: u32
+name: String (length u32 + bytes UTF-8)
+offset_x: i32
+offset_y: i32
+size: u32
+framegroup_count: u32
 
-  [Animations] (repetido animation_count vezes)
-  - anim_name_length: u32
-  - anim_name: String (UTF-8)
-  - sprite_id: u32
-  - width: u32
-  - height: u32
-  - frames: u32
-  - directions: u32
-  - duration: u32
+  [Para cada FrameGroup]
+  name: String
+  animation_count: u32
+
+    [Para cada Animation]
+    has_direction: u8 (0 = sem direção, 1 = com direção)
+    direction: u8 (apenas se has_direction == 1)
+    sprite_id_count: u32
+    sprite_ids: [u32; sprite_id_count]
+    duration: u32
 ```
 
 ### `XXXXX.spr`
 
 ```
 [Header]
-- width: u32
-- height: u32
-- compressed_size: u32
+width: u32
+height: u32
+compressed_size: u32
 
 [Data]
-- compressed_pixels: Vec<u8>  # RGBA compactado (Gzip)
+compressed_pixels: Vec<u8>  # RGBA compactado com Gzip
 ```
 
-## 📦 Biblioteca: `yggdrasil-appearancelib`
+## 📚 Biblioteca: `yggdrasil-appearancelib`
 
-A lógica core está em uma biblioteca reutilizável:
+### Compilação
 
 ```rust
 use yggdrasil_appearancelib::{parse_appearances_json, compile_appearances};
@@ -253,87 +435,97 @@ let appearances = parse_appearances_json("appearances.json")?;
 // Compile
 let result = compile_appearances(&appearances, ".", "output")?;
 
-println!("Compiled {} appearances", result.appearances_count);
+println!("✅ Compiled {} appearances into {} sprites",
+    result.appearances_count, result.sprites_count);
+```
+
+### Carregamento
+
+```rust
+use yggdrasil_appearancelib::{AppearanceLoader, load_all};
+
+// Carrega database + todas as sprites
+let (database, mut loader) = load_all("compiled")?;
+
+// Busca appearance
+let leiden = database.get_appearance(55).unwrap();
+
+// Busca framegroup
+let walk = leiden.get_framegroup("walk").unwrap();
+
+// Busca animação por direção
+let walk_north = walk.get_animation(Some(Direction::North)).unwrap();
+
+// Carrega sprites da animação
+for sprite_id in &walk_north.sprite_ids {
+    let sprite = loader.load_sprite(*sprite_id)?;
+    // sprite.pixels contém RGBA descompactado
+}
 ```
 
 ## ✅ Validações
 
 O compilador verifica automaticamente:
 
-- ✅ Arquivos de sprite existem
-- ✅ Dimensões batem com `frames × directions × size`
+- ✅ Spritesheets existem no caminho especificado
+- ✅ Dimensões corretas baseadas em `orientation`
+  - Vertical: `size × frame_count` × `size × num_directions`
+  - Horizontal: `size × num_directions` × `size × frame_count`
 - ✅ Formatos de imagem suportados (PNG, JPG, etc.)
-- ❌ Reporta erros claros com detalhes do problema
-
-## 🎮 Casos de Uso
-
-### Criatura com animações
-```json
-{
-  "id": 1,
-  "name": "warrior",
-  "size": 64,
-  "animations": {
-    "idle": { "path": "...", "frames": 1, "directions": 4 },
-    "walk": { "path": "...", "frames": 3, "directions": 4, "duration": 150 },
-    "attack": { "path": "...", "frames": 4, "directions": 4, "duration": 100 }
-  }
-}
-```
-
-### Item estático
-```json
-{
-  "id": 100,
-  "name": "sword",
-  "size": 32,
-  "animations": {
-    "default": { "path": "assets/sprites/items/sword.png", "frames": 1 }
-  }
-}
-```
-
-### Efeito sem direção
-```json
-{
-  "id": 200,
-  "name": "explosion",
-  "size": 64,
-  "animations": {
-    "explode": { "path": "...", "frames": 6, "duration": 80 }
-  }
-}
-```
-
-### Projétil com direções
-```json
-{
-  "id": 300,
-  "name": "arrow",
-  "size": 32,
-  "animations": {
-    "fly": { "path": "...", "directions": 4 }
-  }
-}
-```
+- ❌ Erro detalhado com caminho e dimensões esperadas vs reais
 
 ## 🛠️ Desenvolvimento
 
-### Build
 ```bash
+# Build
 cargo build -p yggdrasil-appearances-manager
-```
 
-### Run
-```bash
+# Run
 cargo run -p yggdrasil-appearances-manager
-```
 
-### Tests
-```bash
+# Tests
 cargo test -p yggdrasil-appearancelib
+
+# Watch mode
+cargo watch -x "run -p yggdrasil-appearances-manager"
 ```
 
-## 📝 Licença
+## 💡 Dicas
+
+1. **Organize por tipo:** Separe tiles, personagens, efeitos em pastas
+2. **Nomeie consistentemente:** Use padrões como `{nome}_{ação}.png`
+3. **Teste dimensões:** Confira se `width = size × frames` e `height = size × directions`
+4. **Use vertical por padrão:** Mais comum e natural para animações
+5. **Reutilize spritesheets:** Um spritesheet pode servir múltiplas appearances
+6. **Versione o JSON:** Mantenha o `appearances.json` no git, não a pasta `compiled/`
+
+## 🐛 Erros Comuns
+
+### "Invalid sprite dimensions"
+
+```
+Error: Invalid sprite dimensions for appearance 'assets/walk.png'
+animation 'spritesheet': expected 512x256, got 256x512
+```
+
+**Solução:** Verifique a orientação! Use `"orientation": "horizontal"` se necessário.
+
+### "Sprite not found"
+
+```
+Error: Sprite not found: assets/tiles/grass.png
+```
+
+**Solução:** Certifique-se de que o arquivo existe e o `--base-path` está correto.
+
+### "unknown variant `null`"
+
+```
+Error: unknown variant `null`, expected one of `north`, `east`...
+```
+
+**Solução:** Use `"null"` (com aspas) como chave no JSON para sprites sem direção.
+
+## 📄 Licença
 
 Parte do projeto Yggdrasil Game Server.

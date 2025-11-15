@@ -1,68 +1,29 @@
 use std::collections::HashMap;
-use crate::types::Offset;
-
-/// Orientação dos frames na spritesheet
-///
-/// Define como os frames e direções estão organizados na imagem.
-///
-/// # Vertical (padrão)
-/// As direções ficam em linhas, os frames em colunas:
-/// ```text
-/// ┌─────────────────────────────────────┐
-/// │  [N][N][N][N]  ↑ Linha 0: North     │
-/// │  [S][S][S][S]  ↓ Linha 1: South     │
-/// │  [E][E][E][E]  → Linha 2: East      │
-/// │  [W][W][W][W]  ← Linha 3: West      │
-/// └─────────────────────────────────────┘
-/// ```
-///
-/// # Horizontal
-/// As direções ficam em colunas, os frames em linhas:
-/// ```text
-/// ┌────────────────────────────────────┐
-/// │   ↑  │   ↓   │   →   │   ←   │     │
-/// │──────┼───────┼───────┼───────┼─────│
-/// |  [N][S][E][W]  ← Linha 0: Frame 0  │
-/// │  [N][S][E][W]  ← Linha 1: Frame 1  │
-/// │  [N][S][E][W]  ← Linha 2: Frame 2  │
-/// │  [N][S][E][W]  ← Linha 3: Frame 3  │
-/// └────────────────────────────────────┘
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FrameOrientation {
-    /// Direções em linhas, frames em colunas (padrão)
-    Vertical,
-    /// Direções em colunas, frames em linhas
-    Horizontal,
-}
-
-impl Default for FrameOrientation {
-    fn default() -> Self {
-        FrameOrientation::Vertical
-    }
-}
+use crate::types::{Offset, Direction};
 
 /// Appearance carregada do arquivo .dat
 #[derive(Default, Debug, Clone)]
 pub struct LoadedAppearance {
-    pub id:         u32,
-    pub name:       String,
-    pub offset:     Offset,
-    pub size:       u32,
-    pub animations: HashMap<String, LoadedAnimation>,
+    pub id:          u32,
+    pub name:        String,
+    pub offset:      Offset,
+    pub size:        u32,
+    pub framegroups: Vec<LoadedFrameGroup>,
 }
 
-/// Animação carregada
-#[derive(Default, Debug, Clone)]
+/// FrameGroup carregado
+#[derive(Debug, Clone)]
+pub struct LoadedFrameGroup {
+    pub name:       String,
+    pub animations: HashMap<Option<Direction>, LoadedAnimation>,
+}
+
+/// Animação carregada com lista de sprite IDs
+#[derive(Debug, Clone)]
 pub struct LoadedAnimation {
-    pub name:        String,
-    pub sprite_id:   u32,
-    pub width:       u32,
-    pub height:      u32,
-    pub frames:      u32,
-    pub directions:  u32,
-    pub duration:    u32,
-    pub orientation: FrameOrientation,
+    pub sprite_ids: Vec<u32>,
+    pub duration:   u32,
+    pub looped:     bool,
 }
 
 /// Sprite carregada (pixels descompactados)
@@ -111,65 +72,31 @@ impl AppearanceDatabase {
     }
 }
 
-impl LoadedAnimation {
-    /// Calcula a posição de um frame específico na spritesheet
-    ///
-    /// Retorna (x, y) em pixels do canto superior esquerdo do frame.
-    ///
-    /// # Parâmetros
-    /// - `frame`: Índice do frame (0 a frames-1)
-    /// - `direction`: Índice da direção (0 a directions-1)
-    pub fn get_frame_position(&self, frame: u32, direction: u32) -> (u32, u32) {
-        match self.orientation {
-            FrameOrientation::Vertical => {
-                // Direções em linhas, frames em colunas
-                let x = frame * self.width;
-                let y = direction * self.height;
-                (x, y)
-            }
-            FrameOrientation::Horizontal => {
-                // Direções em colunas, frames em linhas
-                let x = direction * self.width;
-                let y = frame * self.height;
-                (x, y)
-            }
-        }
+impl LoadedAppearance {
+    /// Busca um framegroup por nome
+    pub fn get_framegroup(&self, name: &str) -> Option<&LoadedFrameGroup> {
+        self.framegroups.iter().find(|fg| fg.name == name)
     }
 
-    /// Retorna as dimensões totais da spritesheet em pixels
-    ///
-    /// Retorna (largura_total, altura_total)
-    pub fn get_spritesheet_size(&self) -> (u32, u32) {
-        match self.orientation {
-            FrameOrientation::Vertical => {
-                // frames colunas x directions linhas
-                // Largura = frames * width_do_frame
-                // Altura = directions * height_do_frame
-                (self.width * self.frames, self.height * self.directions)
-            }
-            FrameOrientation::Horizontal => {
-                // directions colunas x frames linhas
-                // Largura = directions * width_do_frame
-                // Altura = frames * height_do_frame
-                (self.width * self.directions, self.height * self.frames)
-            }
-        }
+    /// Retorna todos os framegroups
+    pub fn all_framegroups(&self) -> &[LoadedFrameGroup] {
+        &self.framegroups
+    }
+
+    /// Retorna os nomes de todos os framegroups
+    pub fn framegroup_names(&self) -> impl Iterator<Item = &String> {
+        self.framegroups.iter().map(|fg| &fg.name)
     }
 }
 
-impl LoadedAppearance {
-    /// Busca uma animação por nome
-    pub fn get_animation(&self, name: &str) -> Option<&LoadedAnimation> {
-        self.animations.get(name)
+impl LoadedFrameGroup {
+    /// Busca uma animação por direção
+    pub fn get_animation(&self, direction: Option<Direction>) -> Option<&LoadedAnimation> {
+        self.animations.get(&direction)
     }
 
-    /// Retorna todas as animações
-    pub fn all_animations(&self) -> impl Iterator<Item = &LoadedAnimation> {
-        self.animations.values()
-    }
-
-    /// Retorna os nomes de todas as animações
-    pub fn animation_names(&self) -> impl Iterator<Item = &String> {
-        self.animations.keys()
+    /// Retorna a animação para uma direção ou None (padrão)
+    pub fn get_animation_or_default(&self, direction: Option<Direction>) -> Option<&LoadedAnimation> {
+        self.animations.get(&direction).or_else(|| self.animations.get(&None))
     }
 }
